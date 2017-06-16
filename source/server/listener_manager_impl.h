@@ -46,6 +46,8 @@ public:
   bool useOriginalDst() override { return use_original_dst_; }
   uint32_t perConnectionBufferLimitBytes() override { return per_connection_buffer_limit_bytes_; }
   Stats::Scope& listenerScope() override { return *listener_scope_; }
+  const std::string& name() override { return name_; }
+  uint64_t uniqueId() override { return unique_id_; }
 
   // Server::Configuration::FactoryContext
   AccessLog::AccessLogManager& accessLogManager() override { return server_.accessLogManager(); }
@@ -81,6 +83,8 @@ private:
   const bool use_original_dst_{};
   const uint32_t per_connection_buffer_limit_bytes_{};
   std::list<Configuration::NetworkFilterFactoryCb> filter_factories_;
+  const std::string name_;
+  const uint64_t unique_id_;
 };
 
 /**
@@ -92,13 +96,15 @@ public:
       : server_(server), factory_(factory) {}
 
   // Server::ListenerManager
-  void addListener(const Json::Object& json) override;
-  std::list<std::reference_wrapper<Listener>> listeners() override;
+  void addOrUpdateListener(const Json::Object& json) override;
+  void enterDynamicMode(ListenerManagerCallbacks& callbacks) override;
+  std::list<ListenerSharedPtr> listeners() override { return listeners_; }
+  void removeListener(const std::string& listener_name) override;
 
 private:
   Instance& server_;
   ListenSocketFactory& factory_;
-  std::list<ListenerPtr> listeners_;
+  std::list<ListenerSharedPtr> listeners_;
 };
 
 } // Server

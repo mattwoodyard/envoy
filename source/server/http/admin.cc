@@ -289,8 +289,8 @@ Http::Code AdminImpl::handlerQuitQuitQuit(const std::string&, Buffer::Instance& 
 
 Http::Code AdminImpl::handlerListenerInfo(const std::string&, Buffer::Instance& response) {
   std::list<std::string> listeners;
-  for (auto listener : server_.listenerManager().listeners()) {
-    listeners.push_back(listener.get().socket().localAddress()->asString());
+  for (const auto& listener : server_.listenerManager().listeners()) {
+    listeners.push_back(listener->socket().localAddress()->asString());
   }
   response.add(Json::Factory::listAsJsonString(listeners));
   return Http::Code::OK;

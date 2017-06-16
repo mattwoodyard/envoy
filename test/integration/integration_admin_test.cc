@@ -144,8 +144,7 @@ TEST_P(IntegrationAdminTest, Admin) {
   auto listener_it = listeners.cbegin();
   for (; listener_info_it != listener_info.end() && listener_it != listeners.end();
        ++listener_info_it, ++listener_it) {
-    EXPECT_EQ(listener_it->get().socket().localAddress()->asString(),
-              (*listener_info_it)->asString());
+    EXPECT_EQ((*listener_it)->socket().localAddress()->asString(), (*listener_info_it)->asString());
   }
 }
 

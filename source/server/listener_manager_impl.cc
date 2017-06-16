@@ -38,7 +38,11 @@ ListenerImpl::ListenerImpl(Instance& server, ListenSocketFactory& factory, const
       use_proxy_proto_(json.getBoolean("use_proxy_proto", false)),
       use_original_dst_(json.getBoolean("use_original_dst", false)),
       per_connection_buffer_limit_bytes_(
-          json.getInteger("per_connection_buffer_limit_bytes", 1024 * 1024)) {
+          json.getInteger("per_connection_buffer_limit_bytes", 1024 * 1024)),
+      name_(json.getString("name", "")), // fixfix
+      unique_id_(0)                      // fixfix
+
+{
 
   // ':' is a reserved char in statsd. Do the translation here to avoid costly inline translations
   // later.
@@ -110,17 +114,13 @@ bool ListenerImpl::createFilterChain(Network::Connection& connection) {
   return Configuration::FilterChainUtility::buildFilterChain(connection, filter_factories_);
 }
 
-void ListenerManagerImpl::addListener(const Json::Object& json) {
+void ListenerManagerImpl::addOrUpdateListener(const Json::Object& json) {
   listeners_.emplace_back(new ListenerImpl(server_, factory_, json));
 }
 
-std::list<std::reference_wrapper<Listener>> ListenerManagerImpl::listeners() {
-  std::list<std::reference_wrapper<Listener>> ret;
-  for (const auto& listener : listeners_) {
-    ret.emplace_back(*listener);
-  }
-  return ret;
-}
+void ListenerManagerImpl::enterDynamicMode(ListenerManagerCallbacks&) {}
+
+void ListenerManagerImpl::removeListener(const std::string&) {}
 
 } // Server
 } // Envoy

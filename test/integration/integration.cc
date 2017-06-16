@@ -284,7 +284,7 @@ void BaseIntegrationTest::registerTestServerPorts(const std::vector<std::string>
   auto listeners = test_server_->server().listenerManager().listeners();
   auto listener_it = listeners.cbegin();
   for (; port_it != port_names.end() && listener_it != listeners.end(); ++port_it, ++listener_it) {
-    registerPort(*port_it, listener_it->get().socket().localAddress()->ip()->port());
+    registerPort(*port_it, (*listener_it)->socket().localAddress()->ip()->port());
   }
   registerPort("admin", test_server_->server().admin().socket().localAddress()->ip()->port());
 }

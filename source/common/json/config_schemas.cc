@@ -996,6 +996,20 @@ const std::string Json::Schema::CLUSTER_MANAGER_SCHEMA(R"EOF(
   }
   )EOF");
 
+const std::string Json::Schema::LDS_SCHEMA(R"EOF(
+  {
+    "$schema": "http://json-schema.org/schema#",
+    "type" : "object",
+    "properties" : {
+      "cluster" : {
+        "type" : "string"
+      }
+    },
+    "required" : ["cluster"],
+    "additionalProperties" : false
+  }
+  )EOF");
+
 const std::string Json::Schema::TOP_LEVEL_CONFIG_SCHEMA(R"EOF(
   {
     "$schema": "http://json-schema.org/schema#",
@@ -1066,6 +1080,7 @@ const std::string Json::Schema::TOP_LEVEL_CONFIG_SCHEMA(R"EOF(
         "type" : "array",
         "items" : {"type" : "object"}
       },
+      "lds" : {"type" : "object"},
       "admin" : {
         "type" : "object",
         "properties" : {

@@ -21,6 +21,7 @@ envoy_cc_library(
     srcs = ["configuration_impl.cc"],
     hdrs = ["configuration_impl.h"],
     deps = [
+        ":lds_api_lib",
         "//include/envoy/http:filter_interface",
         "//include/envoy/network:connection_interface",
         "//include/envoy/network:filter_interface",
@@ -34,12 +35,9 @@ envoy_cc_library(
         "//source/common/common:logger_lib",
         "//source/common/common:utility_lib",
         "//source/common/json:config_schemas_lib",
-        "//source/common/json:json_loader_lib",
         "//source/common/network:utility_lib",
         "//source/common/ratelimit:ratelimit_lib",
         "//source/common/tracing:http_tracer_lib",
-        "//source/common/tracing/zipkin:zipkin_lib",
-        "//source/common/upstream:cluster_manager_lib",
     ],
 )
 
@@ -110,6 +108,16 @@ envoy_cc_library(
         "//include/envoy/server:options_interface",
         "//source/common/common:macros",
         "//source/common/common:version_lib",
+    ],
+)
+
+envoy_cc_library(
+    name = "lds_api_lib",
+    srcs = ["lds_api.cc"],
+    hdrs = ["lds_api.h"],
+    deps = [
+        "//source/common/json:config_schemas_lib",
+        "//source/common/json:json_validator_lib",
     ],
 )
 

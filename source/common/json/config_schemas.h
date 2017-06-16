@@ -12,6 +12,7 @@ public:
 
   // Listener Schema
   static const std::string LISTENER_SCHEMA;
+  static const std::string LDS_SCHEMA;
 
   // Network Filter Schemas
   static const std::string CLIENT_SSL_NETWORK_FILTER_SCHEMA;

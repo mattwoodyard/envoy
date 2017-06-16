@@ -19,24 +19,24 @@ Worker::Worker(ThreadLocal::Instance& tls, std::chrono::milliseconds file_flush_
   tls_.registerThread(handler_->dispatcher(), false);
 }
 
-Worker::~Worker() {}
-
-void Worker::initializeConfiguration(ListenerManager& listener_manager, GuardDog& guard_dog) {
-  for (Listener& listener : listener_manager.listeners()) {
-    const Network::ListenerOptions listener_options = {
-        .bind_to_port_ = listener.bindToPort(),
-        .use_proxy_proto_ = listener.useProxyProto(),
-        .use_original_dst_ = listener.useOriginalDst(),
-        .per_connection_buffer_limit_bytes_ = listener.perConnectionBufferLimitBytes()};
-    if (listener.sslContext()) {
-      handler_->addSslListener(listener.filterChainFactory(), *listener.sslContext(),
-                               listener.socket(), listener.listenerScope(), listener_options);
-    } else {
-      handler_->addListener(listener.filterChainFactory(), listener.socket(),
-                            listener.listenerScope(), listener_options);
-    }
+void Worker::addListenerNonThreadSafe(ListenerSharedPtr listener) {
+  const Network::ListenerOptions listener_options = {
+      .bind_to_port_ = listener->bindToPort(),
+      .use_proxy_proto_ = listener->useProxyProto(),
+      .use_original_dst_ = listener->useOriginalDst(),
+      .per_connection_buffer_limit_bytes_ = listener->perConnectionBufferLimitBytes()};
+  if (listener->sslContext()) {
+    handler_->addSslListener(listener->filterChainFactory(), *listener->sslContext(),
+                             listener->socket(), listener->listenerScope(), listener_options);
+  } else {
+    handler_->addListener(listener->filterChainFactory(), listener->socket(),
+                          listener->listenerScope(), listener_options);
   }
+}
 
+void Worker::addListenerThreadSafe(ListenerSharedPtr) {}
+
+void Worker::initialize(GuardDog& guard_dog) {
   // This is just a hack to prevent the event loop from exiting until we tell it to. By default it
   // exits if there are no pending events.
   no_exit_timer_ = handler_->dispatcher().createTimer([this]() -> void { onNoExitTimer(); });

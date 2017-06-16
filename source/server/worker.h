@@ -20,11 +20,15 @@ namespace Server {
 class Worker : Logger::Loggable<Logger::Id::main> {
 public:
   Worker(ThreadLocal::Instance& tls, std::chrono::milliseconds file_flush_interval_msec);
-  ~Worker();
 
   Event::Dispatcher& dispatcher() { return handler_->dispatcher(); }
   Network::ConnectionHandler* handler() { return handler_.get(); }
-  void initializeConfiguration(ListenerManager& listener_manager, GuardDog& guard_dog);
+
+  // fixfix
+  void initialize(GuardDog& guard_dog);
+  void addListenerNonThreadSafe(ListenerSharedPtr listener);
+  void addListenerThreadSafe(ListenerSharedPtr listener);
+  void removeListener(uint64_t listener_unique_id);
 
   /**
    * Exit the worker. Will block until the worker thread joins. Called from the main thread.

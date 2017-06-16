@@ -115,8 +115,10 @@ public:
   MockListenerManager();
   ~MockListenerManager();
 
-  MOCK_METHOD1(addListener, void(const Json::Object& json));
-  MOCK_METHOD0(listeners, std::list<std::reference_wrapper<Listener>>());
+  MOCK_METHOD1(addOrUpdateListener, void(const Json::Object& json));
+  MOCK_METHOD1(enterDynamicMode, void(ListenerManagerCallbacks& callbacks));
+  MOCK_METHOD0(listeners, std::list<ListenerSharedPtr>());
+  MOCK_METHOD1(removeListener, void(const std::string& listener_name));
 };
 
 class MockInstance : public Instance {
@@ -189,7 +191,6 @@ public:
 
   MOCK_METHOD0(clusterManager, Upstream::ClusterManager&());
   MOCK_METHOD0(httpTracer, Tracing::HttpTracer&());
-  MOCK_METHOD0(listeners, std::list<ListenerPtr>&());
   MOCK_METHOD0(rateLimitClientFactory, RateLimit::ClientFactory&());
   MOCK_METHOD0(statsdTcpClusterName, Optional<std::string>());
   MOCK_METHOD0(statsdUdpPort, Optional<uint32_t>());

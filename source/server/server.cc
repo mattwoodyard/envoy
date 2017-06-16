@@ -60,6 +60,7 @@ void InitManagerImpl::initialize(std::function<void()> callback) {
 void InitManagerImpl::registerTarget(Init::Target& target) {
   ASSERT(state_ == State::NotInitialized);
   targets_.push_back(&target);
+  // fixfix support recursive initialize.
 }
 
 InstanceImpl::InstanceImpl(Options& options, TestHooks& hooks, HotRestart& restarter,
@@ -250,7 +251,11 @@ void InstanceImpl::startWorkers(TestHooks& hooks) {
   ENVOY_LOG(warn, "all dependencies initialized. starting workers");
   for (const WorkerPtr& worker : workers_) {
     try {
-      worker->initializeConfiguration(listener_manager_, *guard_dog_);
+      for (const auto& listener : listener_manager_.listeners()) {
+        worker->addListenerNonThreadSafe(listener);
+      }
+
+      worker->initialize(*guard_dog_);
     } catch (const Network::CreateListenerException& e) {
       // It is possible that we fail to start listening on a port, even though we were able to
       // bind to it above. This happens when there is a race between two applications to listen

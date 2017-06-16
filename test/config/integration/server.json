@@ -248,6 +248,10 @@
     }
   },
 
+  "lds": {
+    "cluster": "lds"
+  },
+
   "runtime": {
     "symlink_root": "{{ test_rundir }}/test/common/runtime/test_data/current",
     "subdirectory": "envoy",
