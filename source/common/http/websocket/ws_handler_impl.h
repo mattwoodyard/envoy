@@ -29,7 +29,7 @@ public:
                 WsHandlerCallbacks& callbacks, Upstream::ClusterManager& cluster_manager,
                 Network::ReadFilterCallbacks* read_callbacks);
 
-protected:
+  //protected:
   // Filter::TcpProxy
   const std::string& getUpstreamCluster() override { return route_entry_.clusterName(); }
 

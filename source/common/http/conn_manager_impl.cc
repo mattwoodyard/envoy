@@ -93,8 +93,13 @@ ConnectionManagerImpl::~ConnectionManagerImpl() {
     if (codec_->protocol() == Protocol::Http2) {
       stats_.named_.downstream_cx_http2_active_.dec();
     } else {
+      // TODO(mattwoodyard) tunnel stats
+      //    wheres an example of doing 'dynamic stats'
+      //    pass them?
       if (isWebSocketConnection()) {
         stats_.named_.downstream_cx_websocket_active_.dec();
+      } else if (tunnel_) {
+        // stats_.named_.downstream_tunnel_websocket_active_.dec();
       } else {
         stats_.named_.downstream_cx_http1_active_.dec();
       }
@@ -191,6 +196,11 @@ Network::FilterStatus ConnectionManagerImpl::onData(Buffer::Instance& data) {
     return ws_connection_->onData(data);
   }
 
+  // TODO(mattwoodyard) refactor to support ws here too
+  if (tunnel_) {
+    return tunnel_->onData(data);
+  }
+
   if (!codec_) {
     codec_ = config_.createCodec(read_callbacks_->connection(), data, *this);
     if (codec_->protocol() == Protocol::Http2) {
@@ -236,6 +246,7 @@ Network::FilterStatus ConnectionManagerImpl::onData(Buffer::Instance& data) {
         redispatch = true;
       }
 
+      // TODO(mattwoodyard) Generalize for tunnels
       if (!streams_.empty() && streams_.front()->state_.remote_complete_ &&
           !isWebSocketConnection()) {
         read_callbacks_->connection().readDisable(true);
@@ -420,6 +431,7 @@ Ssl::Connection* ConnectionManagerImpl::ActiveStream::ssl() {
 void ConnectionManagerImpl::ActiveStream::decodeHeaders(HeaderMapPtr&& headers, bool end_stream) {
   ASSERT(!state_.remote_complete_);
   state_.remote_complete_ = end_stream;
+  bool _want_tunnel = false;
 
   request_headers_ = std::move(headers);
   ENVOY_STREAM_LOG(debug, "request headers complete (end_stream={}):", *this, end_stream);
@@ -435,9 +447,19 @@ void ConnectionManagerImpl::ActiveStream::decodeHeaders(HeaderMapPtr&& headers, 
   connection_manager_.user_agent_.initializeFromHeaders(
       *request_headers_, connection_manager_.stats_.prefix_, connection_manager_.stats_.scope_);
 
+  // TODO(mattwoodyard) - refactor all the tunnel related subprotocol stuff into a
+  // commmon api set - a static which returns the 'next protocol handler' or nullptr
+  // if no tunneling needed
+  std::string c("CONNECT");
+  if (request_headers_->Method()->value() == c.c_str()) {
+    _want_tunnel = true;
+  }
+
   // Make sure we are getting a codec version we support.
+  // In the wild lots of CONNECT supporting things claim HTTP/1.0
+  // Like curl :(
   Protocol protocol = connection_manager_.codec_->protocol();
-  if (protocol == Protocol::Http10) {
+  if (protocol == Protocol::Http10 && !_want_tunnel) {
     // The protocol may have shifted in the HTTP/1.0 case so reset it.
     request_info_.protocol(protocol);
     HeaderMapImpl headers{
@@ -494,6 +516,13 @@ void ConnectionManagerImpl::ActiveStream::decodeHeaders(HeaderMapPtr&& headers, 
   ASSERT(!cached_route_.valid());
   cached_route_.value(snapped_route_config_->route(*request_headers_, stream_id_));
 
+  if (_want_tunnel && cached_route_.value()) {
+    const Router::RouteEntry* route_entry = cached_route_.value()->routeEntry();
+
+    connection_manager_.tunnel_.reset(new Http1ConnectHandlerImpl(
+        *request_headers_, *route_entry, connection_manager_.cluster_manager_,
+        connection_manager_.read_callbacks_));
+  }
   // Check for WebSocket upgrade request if the route exists, and supports WebSockets.
   // TODO if there are no filters when starting a filter iteration, the connection manager
   // should return 404. The current returns no response if there is no router filter.

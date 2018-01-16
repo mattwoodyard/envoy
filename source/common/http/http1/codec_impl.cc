@@ -401,10 +401,11 @@ void ServerConnectionImpl::handlePath(HeaderMapImpl& headers, unsigned int metho
     return;
   }
 
-  if (is_connect) {
-    headers.addViaMove(std::move(path), std::move(active_request_->request_url_));
-    return;
-  }
+  // TODO(mattwoodyard) - enable / disable connect
+  // if (is_connect) {
+  //   headers.addViaMove(std::move(path), std::move(active_request_->request_url_));
+  //   return;
+  // }
 
   struct http_parser_url u;
   http_parser_url_init(&u);
@@ -416,8 +417,38 @@ void ServerConnectionImpl::handlePath(HeaderMapImpl& headers, unsigned int metho
     throw CodecProtocolException(
         "http/1.1 protocol error: invalid url in request line, parsed invalid");
   } else {
-    if ((u.field_set & (1 << UF_HOST)) == (1 << UF_HOST) &&
-        (u.field_set & (1 << UF_SCHEMA)) == (1 << UF_SCHEMA)) {
+    if (is_connect) {
+      if ((u.field_set & (1 << UF_HOST)) == (1 << UF_HOST) &&
+          (u.field_set & (1 << UF_PORT)) == (1 << UF_PORT)) {
+
+        uint16_t authority_len = u.field_data[UF_HOST].len;
+
+        if ((u.field_set & (1 << UF_PORT)) == (1 << UF_PORT)) {
+          authority_len = authority_len + u.field_data[UF_PORT].len + 1;
+        }
+
+        // Insert the host header, this will later be converted to :authority
+        std::string new_host(active_request_->request_url_.c_str() + u.field_data[UF_HOST].off,
+                             authority_len);
+
+        headers.insertHost().value(new_host);
+
+        HeaderString new_path;
+        new_path.setCopy("/", 1);
+        headers.addViaMove(std::move(path), std::move(new_path));
+
+
+      } else {
+
+        sendProtocolError();
+        throw CodecProtocolException(
+            "http/1.1 protocol error: invalid hostname/port in CONNECT request");
+      }
+
+      active_request_->request_url_.clear();
+      return;
+    } else if ((u.field_set & (1 << UF_HOST)) == (1 << UF_HOST) &&
+               (u.field_set & (1 << UF_SCHEMA)) == (1 << UF_SCHEMA)) {
       // RFC7230#5.7
       // When a proxy receives a request with an absolute-form of
       // request-target, the proxy MUST ignore the received Host header field

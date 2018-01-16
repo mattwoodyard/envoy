@@ -27,6 +27,7 @@
 #include "common/http/access_log/request_info_impl.h"
 #include "common/http/date_provider.h"
 #include "common/http/user_agent.h"
+#include "common/http/http1_connect_handler.h"
 #include "common/http/websocket/ws_handler_impl.h"
 #include "common/tracing/http_tracer_impl.h"
 
@@ -578,6 +579,7 @@ private:
   const LocalInfo::LocalInfo& local_info_;
   Upstream::ClusterManager& cluster_manager_;
   WebSocket::WsHandlerImplPtr ws_connection_{};
+  Http1ConnectHandlerImplPtr tunnel_{};
   Network::ReadFilterCallbacks* read_callbacks_{};
 };
 
